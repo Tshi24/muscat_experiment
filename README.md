@@ -27,6 +27,7 @@ It provides mission designers with a quantitative framework to verify if mission
 
 ## 📑 Table of Contents
 
+- [🚨 NISAR Mission with Microthrusters](#-nisar-mission-with-microthrusters-new)
 - [Documentation](#-documentation)
 - [Contact](#-contact)
 - [Installation Instructions](#-installation-instructions)
@@ -35,6 +36,39 @@ It provides mission designers with a quantitative framework to verify if mission
 - [Core Architecture](#-core-architecture)
 - [Contributors](#-contributors)
 - [Repository Statistics](#-repository-statistics)
+
+---
+
+## 🚨 NISAR Mission with Microthrusters **[NEW]**
+
+This repository includes an enhanced NISAR mission configuration with **active microthrusters** for attitude control!
+
+### ✨ Features
+- 🚀 **12 Active Microthrusters** (11 high-thrust + 1 fine control)
+- 🎯 **Asymptotically Stable Control** with KKT optimization
+- ⛽ **Integrated Fuel Management** with consumption tracking
+- 📊 **Full System Integration** (power, data, control)
+
+### 📥 Quick Download
+
+**Get the microthruster-enabled version:**
+
+```bash
+git clone -b copilot/enable-microthruster-functionality https://github.com/Tshi24/muscat_experiment.git
+```
+
+Or download as ZIP: [Download Branch](https://github.com/Tshi24/muscat_experiment/archive/refs/heads/copilot/enable-microthruster-functionality.zip)
+
+### 📖 Complete Setup Guide
+
+For detailed installation and usage instructions, see: **[MICROTHRUSTER_SETUP.md](MICROTHRUSTER_SETUP.md)**
+
+This guide includes:
+- Download options
+- Prerequisites and setup
+- Running the simulation
+- Configuration details
+- Troubleshooting tips
 
 ---
 
