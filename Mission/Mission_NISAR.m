@@ -467,6 +467,7 @@ init_data.num_hardware_exists.num_star_tracker = 0;
 init_data.num_hardware_exists.num_imu = 0;
 init_data.num_hardware_exists.num_micro_thruster = 0; % Failed attempt
 init_data.num_hardware_exists.num_chemical_thruster = 0;
+init_data.num_hardware_exists.num_ep_thruster = 1; % SPT-100 Hall thruster for delta-v maneuvers
 init_data.num_hardware_exists.num_reaction_wheel = 0;
 init_data.num_hardware_exists.num_communication_link = 2*mission.true_ground_station.num_GS_radio_antenna;
 init_data.num_hardware_exists.num_radio_antenna = 1;
@@ -1019,6 +1020,32 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemic
 
     % Create chemical thruster object
     mission.true_SC{i_SC}.true_SC_chemical_thruster{i_HW} = True_SC_Chemical_Thruster(init_data, mission, i_SC, i_HW);
+end
+
+%% EP Thruster Configuration - SPT-100 Hall Thruster
+for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster
+
+    init_data = [];
+
+    % Power and data parameters for SPT-100 Hall thruster
+    init_data.instantaneous_power_consumption = 723;        % [W] Power consumption (723W per requirement)
+    init_data.command_actuation_power_consumed = 723;       % [W] Power during active thrust
+    init_data.instantaneous_data_generated_per_sample = 10; % [kb] per sample
+    init_data.thruster_noise = 1e-6;                        % [N] Thrust noise level (very low for EP)
+    init_data.gimbal_noise = 0.01;                          % [deg] Gimbal noise
+
+    % Thruster properties - SPT-100 Hall thruster specifications
+    init_data.thruster_ISP = 1800;                          % [s] Specific impulse (1800s per requirement)
+    init_data.command_wait_time = 1;                        % [s] Minimum time between commands
+    init_data.location = [0, 0, -1.5];                      % [m] Thruster location at rear of spacecraft
+    init_data.orientation = [1, 0, 0];                      % Thrust direction (forward for delta-v)
+
+    init_data.maximum_thrust = 0.035;                       % [N] Maximum thrust (35 mN = 0.035 N per requirement)
+    init_data.minimum_thrust = 0.001;                       % [N] Minimum thrust level
+    init_data.maximum_gimbal = 5;                           % [deg] Maximum gimbal angle
+
+    % Create EP thruster object
+    mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW} = True_SC_EP_Thruster(init_data, mission, i_SC, i_HW);
 end
 
 %% Onboard Computer Configuration
