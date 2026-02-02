@@ -5,6 +5,9 @@ function obj = func_update_software_SC_control_orbit_NISAR(obj, mission, i_SC)
 % Main control loop for NISAR spacecraft orbit using Electric Propulsion
 % This function handles delta-V maneuvers using EP thrusters
 
+% Constants
+MANEUVER_TIMEOUT_SECONDS = 300; % Timeout for EP maneuvers (5 minutes)
+
 % Check if there are any EP thrusters available
 if mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster == 0
     warning('No EP thrusters configured for NISAR mission');
@@ -123,14 +126,14 @@ if obj.desired_DeltaV_needs_to_be_executed && obj.desired_DeltaV_computed
     time_since_planned = mission.true_time.time - obj.time_DeltaV;
     
     % Timeout if running too long since start
-    if obj.maneuver_start_time > 0 && (mission.true_time.time - obj.maneuver_start_time) > 300
+    if obj.maneuver_start_time > 0 && (mission.true_time.time - obj.maneuver_start_time) > MANEUVER_TIMEOUT_SECONDS
         maneuver_timeout = true;
         warning('Maneuver timeout reached after %d seconds from maneuver start', ...
             mission.true_time.time - obj.maneuver_start_time);
     end
     
     % Timeout if waiting too long after planned execution
-    if time_since_planned > 300 && ~maneuver_timeout
+    if time_since_planned > MANEUVER_TIMEOUT_SECONDS && ~maneuver_timeout
         maneuver_timeout = true;
         warning('Maneuver timeout: %d seconds since planned execution time', time_since_planned);
     end

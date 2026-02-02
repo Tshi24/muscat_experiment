@@ -4,6 +4,9 @@ function obj = func_command_DeltaV_EP(obj, mission, i_SC)
 % Command Electric Propulsion thrusters to execute Delta-V maneuver
 % This is different from chemical thrusters - EP thrusters are continuous low-thrust
 
+% Constants
+THROTTLE_DOWN_STEPS = 10; % Number of steps to spread throttled thrust over
+
 % Initialize desired control thrust to zero
 obj.desired_control_thrust = 0;
 
@@ -67,13 +70,13 @@ if remaining_magnitude > 0
     
     % For EP thrusters, we typically use maximum thrust continuously
     % until we get close to the target, then throttle down
-    if remaining_magnitude > max_DeltaV_per_step * 10
+    if remaining_magnitude > max_DeltaV_per_step * THROTTLE_DOWN_STEPS
         % Far from target - use maximum thrust
         thrust_vector = max_thrusts;
         disp(['EP thruster firing at maximum thrust: ', num2str(max_thrusts(1)), ' N']);
     else
         % Close to target - throttle down to avoid overshoot
-        required_thrust_magnitude = (remaining_magnitude * sc_mass) / (dt * 10); % Spread over 10 steps
+        required_thrust_magnitude = (remaining_magnitude * sc_mass) / (dt * THROTTLE_DOWN_STEPS); % Spread over multiple steps
         
         % Distribute thrust among thrusters (equal distribution for simplicity)
         thrust_vector = zeros(1, length(healthy_thrusters));
