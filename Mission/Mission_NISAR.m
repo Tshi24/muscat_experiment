@@ -1187,7 +1187,7 @@ mission.true_SC{i_SC}.software_SC_control_orbit = Software_SC_Control_Orbit(init
 %% Spacecraft Software: Attitude Control Configuration
 
 init_data = [];
-init_data.mode_software_SC_control_attitude_selector = 'NISAR Oracle';
+init_data.mode_software_SC_control_attitude_selector = 'NISAR Control Asymptotically Stable send to thrusters';
 init_data.control_gain = [1 0.2];    % Controller gain parameters
 
 mission.true_SC{i_SC}.software_SC_control_attitude = Software_SC_Control_Attitude(init_data, mission, i_SC);
