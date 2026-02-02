@@ -22,14 +22,14 @@ switch obj.mode_software_SC_control_attitude_selector
     case 'NISAR Control Asymptotically Stable send to thrusters'
         % Use asymptotically stable control with microthrusters
         obj = function_update_desired_control_torque_asymptotically_stable(obj, mission, i_SC);
-        func_decompose_control_torque_into_thrusters_optimization_kkt(obj, mission, i_SC);
+        obj = func_decompose_control_torque_into_thrusters_optimization_kkt(obj, mission, i_SC);
     
     case 'NISAR Control Asymptotically Stable send to actuators'
         % Use asymptotically stable control with actuator selection
         obj = function_update_desired_control_torque_asymptotically_stable(obj, mission, i_SC);
         % If microthrusters are available, use them (NISAR has no reaction wheels)
         if mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_micro_thruster > 0
-            func_decompose_control_torque_into_thrusters_optimization_kkt(obj, mission, i_SC);
+            obj = func_decompose_control_torque_into_thrusters_optimization_kkt(obj, mission, i_SC);
         else
             % Fallback: apply torque directly to ADC
             mission.true_SC{i_SC}.true_SC_adc.control_torque = obj.desired_control_torque';
