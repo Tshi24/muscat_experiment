@@ -211,6 +211,9 @@ classdef Software_SC_Control_Orbit < handle
                     
                     case 'IBEAM'
                         obj = func_update_software_SC_control_orbit_IBEAM(obj, mission, i_SC);
+                    
+                    case 'NISAR'
+                        obj = func_update_software_SC_control_orbit_NISAR(obj, mission, i_SC);
 
                     case 'Inactive'
                         % Do nothing!

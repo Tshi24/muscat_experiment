@@ -1207,7 +1207,7 @@ mission.true_SC{i_SC}.software_SC_estimate_orbit = Software_SC_Estimate_Orbit(in
 
 init_data = [];
 init_data.max_time_before_control = 0.5*60*60 + 900;  % 45 minutes
-init_data.mode_software_SC_control_orbit_selector = 'Inactive';
+init_data.mode_software_SC_control_orbit_selector = 'NISAR'; % Enable NISAR orbit control for EP thruster
 
 mission.true_SC{i_SC}.software_SC_control_orbit = Software_SC_Control_Orbit(init_data, mission, i_SC);
 
