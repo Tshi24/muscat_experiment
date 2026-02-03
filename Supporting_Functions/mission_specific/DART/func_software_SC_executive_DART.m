@@ -54,6 +54,55 @@ if mission.true_SC{i_SC}.software_SC_power.mean_state_of_charge < 30
     return; % Highest priority - exit early
 end
 
+%% 2.5. Spacecraft Charging Mitigation Control (EP Thruster)
+% Call charging mitigation controller to manage EP thruster for charging mitigation
+if isfield(mission.true_SC{i_SC}, 'charging_mitigation_config')
+    
+    % Compute heliocentric distance (x_AU)
+    pos_sun = mission.true_solar_system.SS_body{mission.true_solar_system.index_Sun}.position; % [km]
+    pos_sc = mission.true_SC{i_SC}.true_SC_navigation.position; % [km]
+    r_sun_to_sc = norm(pos_sc - pos_sun); % [km]
+    x_AU = r_sun_to_sc / 149597870.7; % Convert km to AU (1 AU = 149597870.7 km)
+    
+    % Get sunlight status from navigation
+    isSunlit = mission.true_SC{i_SC}.true_SC_navigation.flag_visible_Sun;
+    
+    % Get current EP thruster state (assuming first EP thruster if it exists)
+    thruster_is_on = false;
+    if isfield(mission.true_SC{i_SC}.true_SC_body.num_hardware_exists, 'num_ep_thruster') && ...
+       mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster > 0
+        % Check if EP thruster is currently firing
+        thruster_is_on = mission.true_SC{i_SC}.true_SC_EP_thruster{1}.flag_executive;
+    end
+    
+    % Call charging mitigation controller
+    [thruster_cmd, telemetry] = func_control_charging_mitigation_EP(...
+        mission.true_SC{i_SC}.charging_mitigation_config, ...
+        x_AU, ...
+        isSunlit, ...
+        thruster_is_on);
+    
+    % Apply thruster command to EP thruster (if it exists)
+    if isfield(mission.true_SC{i_SC}.true_SC_body.num_hardware_exists, 'num_ep_thruster') && ...
+       mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster > 0
+        mission.true_SC{i_SC}.true_SC_EP_thruster{1}.flag_executive = thruster_cmd;
+    end
+    
+    % Store telemetry if storage is active
+    if mission.storage.flag_store_this_time_step == 1
+        k = mission.storage.k_storage;
+        obj.store.charging.time_sec(k) = mission.true_time.time;
+        obj.store.charging.x_AU(k) = telemetry.x_AU;
+        obj.store.charging.isSunlit(k) = telemetry.isSunlit;
+        obj.store.charging.phiOff_pred(k) = telemetry.phiOff_pred;
+        obj.store.charging.phiOn_pred(k) = telemetry.phiOn_pred;
+        obj.store.charging.phi_pred(k) = telemetry.phi_pred;
+        obj.store.charging.thruster_is_on(k) = telemetry.thruster_is_on;
+        obj.store.charging.thruster_cmd(k) = telemetry.thruster_cmd;
+        obj.store.charging.reason_code{k} = telemetry.reason_code;
+    end
+end
+
 %% 3. Periodic Data Transmission (Every 5 Hour)
 time_since_last_comm = mission.true_time.time - mission.true_SC{i_SC}.software_SC_communication.last_communication_time;
 

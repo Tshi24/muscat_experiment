@@ -6,4 +6,19 @@ if ~isfield(obj.data, 'last_mode_change_time')
     obj.data.last_mode_change_time = 0;
     obj.data.previous_mode = obj.this_sc_mode;
 end
+
+% Initialize charging mitigation storage
+if ~isfield(obj.store, 'charging')
+    obj.store.charging = [];
+    obj.store.charging.time_sec = zeros(mission.storage.num_storage_steps, 1);
+    obj.store.charging.x_AU = zeros(mission.storage.num_storage_steps, 1);
+    obj.store.charging.isSunlit = zeros(mission.storage.num_storage_steps, 1);
+    obj.store.charging.phiOff_pred = zeros(mission.storage.num_storage_steps, 1);
+    obj.store.charging.phiOn_pred = zeros(mission.storage.num_storage_steps, 1);
+    obj.store.charging.phi_pred = zeros(mission.storage.num_storage_steps, 1);
+    obj.store.charging.thruster_is_on = zeros(mission.storage.num_storage_steps, 1);
+    obj.store.charging.thruster_cmd = zeros(mission.storage.num_storage_steps, 1);
+    obj.store.charging.reason_code = cell(mission.storage.num_storage_steps, 1);
+end
+
 end

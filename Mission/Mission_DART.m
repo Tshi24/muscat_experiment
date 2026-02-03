@@ -164,6 +164,7 @@ init_data.num_hardware_exists.num_star_tracker = 3;
 init_data.num_hardware_exists.num_imu = 1;
 init_data.num_hardware_exists.num_micro_thruster = 12;
 init_data.num_hardware_exists.num_chemical_thruster = 1;
+init_data.num_hardware_exists.num_ep_thruster = 1;  % Add EP thruster for charging mitigation
 init_data.num_hardware_exists.num_reaction_wheel = 3;
 init_data.num_hardware_exists.num_communication_link = 2;
 init_data.num_hardware_exists.num_radio_antenna = 1;
@@ -686,6 +687,35 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemic
     mission.true_SC{i_SC}.true_SC_chemical_thruster{i_HW} = True_SC_Chemical_Thruster(init_data, mission, i_SC, i_HW);
 end
 
+%% EP Thruster Configuration (for Charging Mitigation)
+for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster
+
+    init_data = [];
+
+    % Power and data parameters
+    init_data.instantaneous_power_consumption = 50.0;           % [W] EP thruster power draw when ON
+    init_data.command_actuation_power_consumed = 50.0;          % [W] Power during active thrust
+    init_data.instantaneous_data_generated_per_sample = 5;      % [kb] per sample
+    
+    % Thruster properties
+    init_data.isp = 3000;                                       % [s] High specific impulse for EP
+    init_data.command_wait_time = 1;                            % [s] Minimum time between commands
+    init_data.location = [0.3, 0.2/2, 0.1/2];                   % [m] Thruster location in body frame
+    init_data.orientation = [-1, 0, 0];                         % Thrust direction (unit vector)
+
+    init_data.maximum_thrust = 0.1;                             % [N] Maximum thrust level (typical for EP)
+    init_data.minimum_thrust = 0.01;                            % [N] Minimum thrust level
+    
+    init_data.thruster_noise = 1e-4;                            % [N] Thrust noise level
+    init_data.gimbal_noise = 0.1;                               % [deg] Gimbal noise
+    init_data.maximum_gimbal = 5;                               % [deg] Maximum gimbal angle
+
+    init_data.mode_true_EP_thruster_selector = 'Simple';        % Mode (Truth/Simple)
+
+    % Create EP thruster object
+    mission.true_SC{i_SC}.true_SC_EP_thruster{i_HW} = True_SC_EP_Thruster(init_data, mission, i_SC, i_HW);
+end
+
 %% Onboard Computer Configuration
 for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_onboard_computer
     init_data = [];
@@ -765,6 +795,17 @@ init_data.sc_modes = {'Point camera to Target', 'Maximize SP Power', 'Point Thru
 init_data.mode_software_SC_executive_selector = 'DART';
 
 mission.true_SC{i_SC}.software_SC_executive = Software_SC_Executive(init_data, mission, i_SC);
+
+%% Spacecraft Charging Mitigation Configuration
+
+init_data_charging = [];
+init_data_charging.V_ON = -20;   % [V] Turn thruster ON when phi <= -20 V
+init_data_charging.V_OFF = -12;  % [V] Allow thruster OFF when phi >= -12 V
+init_data_charging.policy_require_sunlight_for_ep = true;  % Only allow EP ON in sunlight
+init_data_charging.clamp_range = [0.044, 1.0];  % [AU] Valid model range for x_AU
+
+mission.true_SC{i_SC}.charging_mitigation_config = init_data_charging;
+clear init_data_charging
 
 %% Spacecraft Software: Attitude Estimation Configuration
 
