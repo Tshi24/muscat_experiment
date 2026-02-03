@@ -801,7 +801,13 @@ mission.true_SC{i_SC}.software_SC_executive = Software_SC_Executive(init_data, m
 init_data_charging = [];
 init_data_charging.V_ON = -20;   % [V] Turn thruster ON when phi <= -20 V
 init_data_charging.V_OFF = -12;  % [V] Allow thruster OFF when phi >= -12 V
-init_data_charging.policy_require_sunlight_for_ep = true;  % Only allow EP ON in sunlight
+
+% Sunlight Policy: false = Allow EP in eclipse (RECOMMENDED for Bennu)
+% Near Bennu: Eclipse charging ~-15V (concerning but above -20V threshold)
+% Setting to false provides protection if eclipse charging worsens
+% Power impact: Minimal (only activates if phi <= -20V)
+init_data_charging.policy_require_sunlight_for_ep = false;  % Allow EP in eclipse for comprehensive protection
+
 init_data_charging.clamp_range = [0.044, 1.0];  % [AU] Valid model range for x_AU
 
 mission.true_SC{i_SC}.charging_mitigation_config = init_data_charging;
