@@ -165,7 +165,7 @@ for k = 1:1:mission.true_time.num_time_steps
 
         %% [ ] Update EP Thruster 
         for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster
-            func_main_true_ep_thruster(mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW}, mission, i_SC, i_HW);
+            func_main_true_ep_thruster(mission.true_SC{i_SC}.true_SC_EP_thruster{i_HW}, mission, i_SC, i_HW);
         end
 
         %% [ ] Update Fuel Tanks

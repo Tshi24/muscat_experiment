@@ -36,7 +36,7 @@ function func_plot_IBEAM_orbit_deflection_control_performance(mission, i_SC)
         hold on;
 
         for i_HW = 1:num_thrusters
-            thruster = mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW};
+            thruster = mission.true_SC{i_SC}.true_SC_EP_thruster{i_HW};
             
             switch i_HW
                 case 1
@@ -86,7 +86,7 @@ function func_plot_IBEAM_orbit_deflection_control_performance(mission, i_SC)
 
                 force_data = zeros(size(thruster.store.force_inertial(1:kd, :)));
                 for i_HW = 1:num_thrusters
-                    thruster = mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW};
+                    thruster = mission.true_SC{i_SC}.true_SC_EP_thruster{i_HW};
                     force_data = force_data + thruster.store.force_inertial(1:kd, :);
                 end
 
@@ -388,7 +388,7 @@ function func_plot_IBEAM_orbit_deflection_control_performance(mission, i_SC)
         ep_consumption = zeros(kd, 1);
         if has_ep_thrusters
             for i_CT = 1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster
-                thruster = mission.true_SC{i_SC}.true_SC_ep_thruster{i_CT};
+                thruster = mission.true_SC{i_SC}.true_SC_EP_thruster{i_CT};
                 if isfield(thruster.store, 'total_fuel_consumed')
                     ep_consumption = ep_consumption + thruster.store.total_fuel_consumed(1:kd);
                 end
