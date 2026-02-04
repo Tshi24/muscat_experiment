@@ -698,7 +698,7 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thr
     init_data.instantaneous_data_generated_per_sample = 5;      % [kb] per sample
     
     % Thruster properties
-    init_data.isp = 3000;                                       % [s] High specific impulse for EP
+    init_data.thruster_ISP = 3000;                              % [s] High specific impulse for EP
     init_data.command_wait_time = 1;                            % [s] Minimum time between commands
     init_data.location = [0.3, 0.2/2, 0.1/2];                   % [m] Thruster location in body frame
     init_data.orientation = [-1, 0, 0];                         % Thrust direction (unit vector)
