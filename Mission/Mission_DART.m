@@ -799,19 +799,49 @@ mission.true_SC{i_SC}.software_SC_executive = Software_SC_Executive(init_data, m
 %% Spacecraft Charging Mitigation Configuration
 
 init_data_charging = [];
-init_data_charging.V_ON = -20;   % [V] Turn thruster ON when phi <= -20 V
-init_data_charging.V_OFF = -12;  % [V] Allow thruster OFF when phi >= -12 V
+
+% THRESHOLD CONFIGURATION - Adjust these values to change when thruster activates
+% Default: V_ON = -20 V, V_OFF = -12 V
+% For more sensitive mitigation, use: V_ON = -10 V, V_OFF = -5 V
+% For less sensitive mitigation, use: V_ON = -30 V, V_OFF = -20 V
+
+init_data_charging.V_ON = -20;   % [V] Turn thruster ON when phi <= V_ON
+init_data_charging.V_OFF = -12;  % [V] Allow thruster OFF when phi >= V_OFF
+
+% NOTE: To activate thruster at -10V as mentioned, change to:
+% init_data_charging.V_ON = -10;   % [V] Turn thruster ON when phi <= -10 V
+% init_data_charging.V_OFF = -5;   % [V] Allow thruster OFF when phi >= -5 V
 
 % Sunlight Policy: false = Allow EP in eclipse (RECOMMENDED for Bennu)
 % Near Bennu: Eclipse charging ~-15V (concerning but above -20V threshold)
 % Setting to false provides protection if eclipse charging worsens
-% Power impact: Minimal (only activates if phi <= -20V)
+% Power impact: Minimal (only activates if phi <= V_ON)
 init_data_charging.policy_require_sunlight_for_ep = false;  % Allow EP in eclipse for comprehensive protection
 
 init_data_charging.clamp_range = [0.044, 1.0];  % [AU] Valid model range for x_AU
 
 mission.true_SC{i_SC}.charging_mitigation_config = init_data_charging;
+
+% Display configuration
+fprintf('\n');
+fprintf('=== CHARGING MITIGATION CONFIGURATION ===\n');
+fprintf('  V_ON Threshold:  %.0f V (thruster turns ON when potential <= %.0f V)\n', ...
+        init_data_charging.V_ON, init_data_charging.V_ON);
+fprintf('  V_OFF Threshold: %.0f V (thruster turns OFF when potential >= %.0f V)\n', ...
+        init_data_charging.V_OFF, init_data_charging.V_OFF);
+fprintf('  Eclipse Policy:  %s\n', iif(init_data_charging.policy_require_sunlight_for_ep, 'Sunlight only', 'Allow in eclipse'));
+fprintf('=========================================\n\n');
+
 clear init_data_charging
+
+% Helper function for conditional display
+function result = iif(condition, true_val, false_val)
+    if condition
+        result = true_val;
+    else
+        result = false_val;
+    end
+end
 
 %% Spacecraft Software: Attitude Estimation Configuration
 
@@ -931,14 +961,19 @@ disp(['Current memory after visualisation - ', memoryInfo(1:end-1), ])
 disp ('----------------------------------------')
 
 %% Charging Mitigation Plotting
-% Generate charging mitigation visualization
+% Generate charging mitigation visualizations
 for i_SC = 1:mission.num_SC
     if isfield(mission.true_SC{i_SC}.software_SC_executive.store, 'charging')
+        % Standard charging plot
         func_plot_charging_mitigation(mission, i_SC);
+        
+        % Enhanced plot with battery and solar panel integration
+        func_plot_charging_mitigation_enhanced(mission, i_SC);
     end
 end
 disp('Charging mitigation plots generated.')
 disp ('----------------------------------------')
+
 
 
 
