@@ -39,7 +39,7 @@ function func_plot_charging_mitigation(mission, i_SC)
     
     % Create figure
     figure('Name', 'Spacecraft Charging & Mitigation', 'NumberTitle', 'off', ...
-           'Position', [100, 100, 1200, 800]);
+           'Position', [100, 100, 1200, 1000]);
     
     % Define standard font size
     if isfield(mission.storage, 'plot_parameters') && isfield(mission.storage.plot_parameters, 'standard_font_size')
@@ -49,7 +49,7 @@ function func_plot_charging_mitigation(mission, i_SC)
     end
     
     %% Subplot 1: Spacecraft Potential vs Time
-    subplot(3, 1, 1);
+    subplot(4, 1, 1);
     hold on;
     grid on;
     
@@ -75,7 +75,7 @@ function func_plot_charging_mitigation(mission, i_SC)
     hold off;
     
     %% Subplot 2: Thruster State (ON/OFF)
-    subplot(3, 1, 2);
+    subplot(4, 1, 2);
     hold on;
     grid on;
     
@@ -115,7 +115,7 @@ function func_plot_charging_mitigation(mission, i_SC)
     hold off;
     
     %% Subplot 3: Power Consumption
-    subplot(3, 1, 3);
+    subplot(4, 1, 3);
     hold on;
     grid on;
     
@@ -125,6 +125,28 @@ function func_plot_charging_mitigation(mission, i_SC)
     xlabel('Time [hours]', 'FontSize', font_size);
     ylabel('Power [W]', 'FontSize', font_size);
     title('Power Consumption for Charging Mitigation', 'FontSize', font_size, 'FontWeight', 'bold');
+    legend('Location', 'best', 'FontSize', font_size-2);
+    set(gca, 'FontSize', font_size);
+    hold off;
+    
+    %% Subplot 4: Cumulative Energy
+    subplot(4, 1, 4);
+    hold on;
+    grid on;
+    
+    % Plot cumulative energy if available
+    if isfield(charging, 'cumulative_energy')
+        plot(time_hours, charging.cumulative_energy(1:kd), 'k-', 'LineWidth', 2, 'DisplayName', 'Cumulative Energy');
+    else
+        % Calculate cumulative energy from power consumption
+        dt = mission.true_time.time_step;  % [sec]
+        cumulative = cumsum(charging.power_consumption(1:kd)) * dt / 3600;  % [W-hr]
+        plot(time_hours, cumulative, 'k-', 'LineWidth', 2, 'DisplayName', 'Cumulative Energy');
+    end
+    
+    xlabel('Time [hours]', 'FontSize', font_size);
+    ylabel('Energy [W-hr]', 'FontSize', font_size);
+    title('Cumulative Energy Used for Mitigation', 'FontSize', font_size, 'FontWeight', 'bold');
     legend('Location', 'best', 'FontSize', font_size-2);
     set(gca, 'FontSize', font_size);
     hold off;

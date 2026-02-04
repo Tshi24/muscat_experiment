@@ -28,6 +28,17 @@ function func_print_charging_mitigation_summary(mission, i_SC)
     phi_pred = charging.phi_pred(1:kd);
     thruster_cmd = charging.thruster_cmd(1:kd);
     power_consumption = charging.power_consumption(1:kd);
+    isSunlit = charging.isSunlit(1:kd);
+    
+    % Get cumulative energy if available
+    if isfield(charging, 'cumulative_energy')
+        cumulative_energy = charging.cumulative_energy(1:kd);
+        total_energy_Wh = cumulative_energy(end);  % [W-hr] From tracking
+    else
+        % Fallback to calculation from power consumption
+        dt = mission.true_time.time_step;  % [sec]
+        total_energy_Wh = sum(power_consumption) * dt / 3600;  % [W-hr]
+    end
     
     %% Calculate Summary Statistics
     
@@ -49,10 +60,24 @@ function func_print_charging_mitigation_summary(mission, i_SC)
     total_time = time_sec(end) - time_sec(1);
     thruster_on_percent = (thruster_on_time / total_time) * 100;
     
-    % Calculate total energy used for mitigation
-    % Energy = Power * Time
-    total_energy_Wh = sum(power_consumption) * dt / 3600;  % [W-hr]
+    % Total energy already calculated above from cumulative tracking
     total_energy_kWh = total_energy_Wh / 1000;  % [kW-hr]
+    
+    % Calculate separate statistics for sunlit vs eclipse
+    sunlit_idx = (isSunlit > 0);
+    eclipse_idx = (isSunlit == 0);
+    
+    if any(sunlit_idx)
+        mean_potential_sunlit = mean(phi_pred(sunlit_idx));
+    else
+        mean_potential_sunlit = NaN;
+    end
+    
+    if any(eclipse_idx)
+        mean_potential_eclipse = mean(phi_pred(eclipse_idx));
+    else
+        mean_potential_eclipse = NaN;
+    end
     
     % Count number of activation events
     thruster_activations = sum(diff([0; thruster_cmd]) > 0);
@@ -75,6 +100,12 @@ function func_print_charging_mitigation_summary(mission, i_SC)
     fprintf('  Minimum Potential:        %+.2f V (at t = %.2f hours)\n', min_potential, time_min_potential/3600);
     fprintf('  Maximum Potential:        %+.2f V\n', max_potential);
     fprintf('  Mean Potential:           %+.2f V\n', mean_potential);
+    if ~isnan(mean_potential_sunlit)
+        fprintf('  Mean (Sunlit):            %+.2f V\n', mean_potential_sunlit);
+    end
+    if ~isnan(mean_potential_eclipse)
+        fprintf('  Mean (Eclipse):           %+.2f V\n', mean_potential_eclipse);
+    end
     fprintf('\n');
     
     fprintf('CONTROLLER CONFIGURATION:\n');
@@ -127,6 +158,11 @@ function func_print_charging_mitigation_summary(mission, i_SC)
         charging_data.power_consumption = power_consumption;
         charging_data.reason_code = charging.reason_code(1:kd);
         
+        % Add cumulative energy if available
+        if isfield(charging, 'cumulative_energy')
+            charging_data.cumulative_energy = charging.cumulative_energy(1:kd);
+        end
+        
         % Configuration
         charging_data.V_ON = V_ON_val;
         charging_data.V_OFF = V_OFF_val;
@@ -136,6 +172,8 @@ function func_print_charging_mitigation_summary(mission, i_SC)
         charging_data.summary.min_potential = min_potential;
         charging_data.summary.max_potential = max_potential;
         charging_data.summary.mean_potential = mean_potential;
+        charging_data.summary.mean_potential_sunlit = mean_potential_sunlit;
+        charging_data.summary.mean_potential_eclipse = mean_potential_eclipse;
         charging_data.summary.time_min_potential = time_min_potential;
         charging_data.summary.thruster_on_time_sec = thruster_on_time;
         charging_data.summary.thruster_on_time_hours = thruster_on_time_hours;
