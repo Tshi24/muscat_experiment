@@ -908,6 +908,14 @@ save([mission.storage.output_folder, 'all_data.mat'], '-v7.3')
 disp(['Finished writing to file "all_data.mat" in folder : ', mission.storage.output_folder])
 disp ('----------------------------------------')
 
+%% Charging Mitigation Analysis
+% Print summary and save charging mitigation data
+for i_SC = 1:mission.num_SC
+    if isfield(mission.true_SC{i_SC}.software_SC_executive.store, 'charging')
+        func_print_charging_mitigation_summary(mission, i_SC);
+    end
+end
+
 
 %% Plots
 % Use our memory-optimized visualization
@@ -921,5 +929,16 @@ memoryInfo = evalc('dispmemory()');
 fprintf('Visualization complete.');
 disp(['Current memory after visualisation - ', memoryInfo(1:end-1), ])
 disp ('----------------------------------------')
+
+%% Charging Mitigation Plotting
+% Generate charging mitigation visualization
+for i_SC = 1:mission.num_SC
+    if isfield(mission.true_SC{i_SC}.software_SC_executive.store, 'charging')
+        func_plot_charging_mitigation(mission, i_SC);
+    end
+end
+disp('Charging mitigation plots generated.')
+disp ('----------------------------------------')
+
 
 

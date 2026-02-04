@@ -19,6 +19,9 @@ if ~isfield(obj.store, 'charging')
     obj.store.charging.thruster_is_on = zeros(mission.storage.num_storage_steps, 1);
     obj.store.charging.thruster_cmd = zeros(mission.storage.num_storage_steps, 1);
     obj.store.charging.reason_code = cell(mission.storage.num_storage_steps, 1);
+    obj.store.charging.power_consumption = zeros(mission.storage.num_storage_steps, 1);  % [W] Power used for mitigation
+    obj.store.charging.V_ON = zeros(mission.storage.num_storage_steps, 1);   % [V] Threshold values
+    obj.store.charging.V_OFF = zeros(mission.storage.num_storage_steps, 1);  % [V] Threshold values
 end
 
 end

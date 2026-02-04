@@ -100,6 +100,21 @@ if isfield(mission.true_SC{i_SC}, 'charging_mitigation_config')
         obj.store.charging.thruster_is_on(k) = telemetry.thruster_is_on;
         obj.store.charging.thruster_cmd(k) = telemetry.thruster_cmd;
         obj.store.charging.reason_code{k} = telemetry.reason_code;
+        
+        % Calculate power consumption for mitigation (50W when thruster is ON for mitigation)
+        if telemetry.thruster_cmd && ~telemetry.thruster_is_on
+            % Thruster just turned ON for mitigation
+            obj.store.charging.power_consumption(k) = 50.0;  % [W] EP thruster power
+        elseif telemetry.thruster_cmd
+            % Thruster remains ON
+            obj.store.charging.power_consumption(k) = 50.0;  % [W] EP thruster power
+        else
+            obj.store.charging.power_consumption(k) = 0.0;
+        end
+        
+        % Store threshold values
+        obj.store.charging.V_ON(k) = mission.true_SC{i_SC}.charging_mitigation_config.V_ON;
+        obj.store.charging.V_OFF(k) = mission.true_SC{i_SC}.charging_mitigation_config.V_OFF;
     end
 end
 
