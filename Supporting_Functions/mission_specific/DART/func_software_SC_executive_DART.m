@@ -88,6 +88,17 @@ if isfield(mission.true_SC{i_SC}, 'charging_mitigation_config')
         mission.true_SC{i_SC}.true_SC_EP_thruster{1}.flag_executive = thruster_cmd;
     end
     
+    % Update cumulative energy consumption
+    if obj.data.last_energy_update_time > 0
+        dt_hours = (mission.true_time.time - obj.data.last_energy_update_time) / 3600.0;  % Convert sec to hours
+        if thruster_cmd
+            % EP thruster is ON for mitigation
+            EP_power = 50.0;  % [W]
+            obj.data.cumulative_mitigation_energy = obj.data.cumulative_mitigation_energy + EP_power * dt_hours;  % [W-hr]
+        end
+    end
+    obj.data.last_energy_update_time = mission.true_time.time;
+    
     % Store telemetry if storage is active
     if mission.storage.flag_store_this_time_step == 1
         k = mission.storage.k_storage;
@@ -102,15 +113,14 @@ if isfield(mission.true_SC{i_SC}, 'charging_mitigation_config')
         obj.store.charging.reason_code{k} = telemetry.reason_code;
         
         % Calculate power consumption for mitigation (50W when thruster is ON for mitigation)
-        if telemetry.thruster_cmd && ~telemetry.thruster_is_on
-            % Thruster just turned ON for mitigation
-            obj.store.charging.power_consumption(k) = 50.0;  % [W] EP thruster power
-        elseif telemetry.thruster_cmd
-            % Thruster remains ON
+        if telemetry.thruster_cmd
             obj.store.charging.power_consumption(k) = 50.0;  % [W] EP thruster power
         else
             obj.store.charging.power_consumption(k) = 0.0;
         end
+        
+        % Store cumulative energy
+        obj.store.charging.cumulative_energy(k) = obj.data.cumulative_mitigation_energy;  % [W-hr]
         
         % Store threshold values
         obj.store.charging.V_ON(k) = mission.true_SC{i_SC}.charging_mitigation_config.V_ON;

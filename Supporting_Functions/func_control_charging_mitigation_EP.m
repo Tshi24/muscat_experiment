@@ -48,8 +48,15 @@ function [thruster_cmd, telemetry] = func_control_charging_mitigation_EP(config,
     %% Safety: Clamp x_AU to valid model range to avoid blow-ups
     x_AU_clamped = min(max(x_AU, config.clamp_range(1)), config.clamp_range(2));
     
-    %% Compute predicted potentials using SPIS-based models
-    [phiOff_pred, phiOn_pred] = Phi_sunlit_models(x_AU_clamped);
+    %% Compute predicted potentials using appropriate model
+    % Use sunlit model if in sunlight, eclipse model if in shadow
+    if isSunlit
+        % Sunlit charging models (SPIS-based)
+        [phiOff_pred, phiOn_pred] = Phi_sunlit_models(x_AU_clamped);
+    else
+        % Eclipse charging models (typically more negative)
+        [phiOff_pred, phiOn_pred] = Phi_eclipse_models(x_AU_clamped);
+    end
     
     %% Choose phi_pred according to current thruster state
     if thruster_is_on

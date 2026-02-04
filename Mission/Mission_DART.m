@@ -26,6 +26,15 @@ mission.num_target = 1;        % Number of Target bodies
 mission.frame = 'Absolute';    % Frame type: 'Absolute', 'Relative', or 'Combined'
 mission.flag_stop_sim = 0;     % Boolean flag to stop simulation if needed
 
+%% ========== CHARGING MITIGATION SCENARIO SELECTION ==========
+% Select scenario to demonstrate different charging conditions:
+%   'AU1_sunlight' - 1 AU in sunlight (safe, thruster stays OFF)
+%   'AU1_eclipse'  - 1 AU in eclipse (~-15V, thruster activates)
+%   'AU0044'       - 0.044 AU near Sun (severe charging, high mitigation)
+%   'BENNU'        - Default Bennu orbit (0.896 AU, mixed conditions)
+mission.charging_scenario = 'BENNU';  % <<< CHANGE THIS TO TEST SCENARIOS
+% ================================================================
+
 %% Time Configuration
 
 init_data = [];
@@ -197,6 +206,50 @@ init_data.spice_name = '-110'; % [string] : SC's SPICE Name
 init_data.SC_pos_vel = cspice_spkezr(init_data.spice_name,mission.true_time.date,'J2000','NONE','SOLAR SYSTEM BARYCENTER');
 init_data.position = init_data.SC_pos_vel(1:3)'; % [km]
 init_data.velocity = init_data.SC_pos_vel(4:6)'; % [km/sec]
+
+%% Apply Scenario-Specific Orbit Modifications
+% Modify orbit based on selected charging scenario
+switch mission.charging_scenario
+    case 'AU1_sunlight'
+        % Force spacecraft to 1 AU from Sun in sunlight
+        % Use circular orbit at 1 AU (Earth's orbit radius)
+        fprintf('\n*** SCENARIO: AU1_sunlight - 1 AU in sunlight ***\n');
+        r_AU = 1.0 * 149597870.7; % 1 AU in km
+        % Place at 1 AU from Sun
+        init_data.position = [r_AU; 0; 0];
+        % Circular orbit velocity at 1 AU
+        v_circ = sqrt(1.32712440018e11 / r_AU); % [km/s] GM_sun / r
+        init_data.velocity = [0; v_circ; 0];
+        
+    case 'AU1_eclipse'
+        % Force spacecraft to 1 AU but in Earth's shadow to trigger eclipse
+        fprintf('\n*** SCENARIO: AU1_eclipse - 1 AU in eclipse ***\n');
+        r_AU = 1.0 * 149597870.7; % 1 AU in km
+        % Place near Earth's orbital distance but offset
+        % Position slightly behind Earth to be in shadow
+        init_data.position = [r_AU * 0.999; 0; 0]; % Slightly closer to Sun
+        v_circ = sqrt(1.32712440018e11 / (r_AU * 0.999)); % [km/s]
+        init_data.velocity = [0; v_circ * 0.98; 0]; % Slower to drift into eclipse
+        
+    case 'AU0044'
+        % Force spacecraft to 0.044 AU (very close to Sun)
+        fprintf('\n*** SCENARIO: AU0044 - Near Sun at 0.044 AU ***\n');
+        r_AU = 0.044 * 149597870.7; % 0.044 AU in km
+        init_data.position = [r_AU; 0; 0];
+        v_circ = sqrt(1.32712440018e11 / r_AU); % [km/s]
+        init_data.velocity = [0; v_circ; 0];
+        
+    case 'BENNU'
+        % Use default SPICE trajectory (already loaded above)
+        fprintf('\n*** SCENARIO: BENNU - Default Bennu orbit trajectory ***\n');
+        % init_data.position and velocity already set from SPICE
+        
+    otherwise
+        warning(['Unknown scenario: ', mission.charging_scenario, '. Using BENNU default.']);
+end
+
+fprintf('Initial orbit: r = %.4f AU\n', norm(init_data.position) / 149597870.7);
+fprintf('=========================================\n\n');
 
 init_data.mode_true_SC_navigation_dynamics_selector = 'Absolute Dynamics';
 
@@ -800,17 +853,25 @@ mission.true_SC{i_SC}.software_SC_executive = Software_SC_Executive(init_data, m
 
 init_data_charging = [];
 
-% THRESHOLD CONFIGURATION - Adjust these values to change when thruster activates
-% Default: V_ON = -20 V, V_OFF = -12 V
-% For more sensitive mitigation, use: V_ON = -10 V, V_OFF = -5 V
-% For less sensitive mitigation, use: V_ON = -30 V, V_OFF = -20 V
+%% ========== THRESHOLD CONFIGURATION (EASY TO CHANGE) ==========
+% These thresholds control when the EP thruster activates for charging mitigation
+% SINGLE CONFIGURATION POINT - Change here only!
 
-init_data_charging.V_ON = -20;   % [V] Turn thruster ON when phi <= V_ON
-init_data_charging.V_OFF = -12;  % [V] Allow thruster OFF when phi >= V_OFF
+init_data_charging.V_ON = -10;   % [V] Turn thruster ON when phi <= -10 V
+init_data_charging.V_OFF = -6;   % [V] Allow thruster OFF when phi >= -6 V
 
-% NOTE: To activate thruster at -10V as mentioned, change to:
-% init_data_charging.V_ON = -10;   % [V] Turn thruster ON when phi <= -10 V
-% init_data_charging.V_OFF = -5;   % [V] Allow thruster OFF when phi >= -5 V
+% Alternative threshold sets (uncomment to use):
+% Conservative (less frequent activation):
+%   init_data_charging.V_ON = -20;   % [V] Turn thruster ON when phi <= -20 V
+%   init_data_charging.V_OFF = -12;  % [V] Allow thruster OFF when phi >= -12 V
+
+% Very sensitive (more frequent activation):
+%   init_data_charging.V_ON = -7;    % [V] Turn thruster ON when phi <= -7 V
+%   init_data_charging.V_OFF = -4;   % [V] Allow thruster OFF when phi >= -4 V
+
+% NOTE: Hysteresis Gap = V_OFF - V_ON (current: 4V)
+% Larger gap = more stable (less chatter), smaller gap = tighter control
+% ===============================================================
 
 % Sunlight Policy: false = Allow EP in eclipse (RECOMMENDED for Bennu)
 % Near Bennu: Eclipse charging ~-15V (concerning but above -20V threshold)
