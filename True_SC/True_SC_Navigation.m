@@ -304,7 +304,8 @@ classdef True_SC_Navigation < handle
                     else
                         x0 = mission.true_target{i_target}.position; % [km]
 
-                        d = norm(cross(x0 - x1, x0 - x2))/norm(x2 - x1);
+                        % Ensure vectors are column vectors for cross product
+                        d = norm(cross((x0(:) - x1(:)), (x0(:) - x2(:))))/norm(x2(:) - x1(:));
                         if d >= mission.true_target{i_target}.radius % [km]
                             % No chance of eclipse
                         else
@@ -333,7 +334,8 @@ classdef True_SC_Navigation < handle
 
                         x0 = mission.true_solar_system.SS_body{i_SS_body}.position; % [km]
 
-                        d = norm(cross(x0 - x1, x0 - x2))/norm(x2 - x1);
+                        % Ensure vectors are column vectors for cross product
+                        d = norm(cross((x0(:) - x1(:)), (x0(:) - x2(:))))/norm(x2(:) - x1(:));
                         if d >= mission.true_solar_system.SS_body{i_SS_body}.radius % [km]
                             % No chance of eclipse
                         else
