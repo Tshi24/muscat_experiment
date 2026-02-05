@@ -112,6 +112,17 @@ if isfield(mission.true_SC{i_SC}, 'charging_mitigation_config')
         obj.store.charging.thruster_cmd(k) = telemetry.thruster_cmd;
         obj.store.charging.reason_code{k} = telemetry.reason_code;
         
+        % Compute actual spacecraft potential based on thruster command
+        % This is what the spacecraft potential will be AFTER the command is applied
+        if telemetry.thruster_cmd
+            % Thruster commanded ON → spacecraft potential will be phiOn_pred
+            phi_used = telemetry.phiOn_pred;
+        else
+            % Thruster commanded OFF → spacecraft potential will be phiOff_pred
+            phi_used = telemetry.phiOff_pred;
+        end
+        obj.store.charging.phi_used(k) = phi_used;
+        
         % Calculate power consumption for mitigation (50W when thruster is ON for mitigation)
         if telemetry.thruster_cmd
             obj.store.charging.power_consumption(k) = 50.0;  % [W] EP thruster power

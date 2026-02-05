@@ -16,6 +16,7 @@ if ~isfield(obj.store, 'charging')
     obj.store.charging.phiOff_pred = zeros(mission.storage.num_storage_steps, 1);
     obj.store.charging.phiOn_pred = zeros(mission.storage.num_storage_steps, 1);
     obj.store.charging.phi_pred = zeros(mission.storage.num_storage_steps, 1);
+    obj.store.charging.phi_used = zeros(mission.storage.num_storage_steps, 1);  % [V] Actual spacecraft potential based on thruster state
     obj.store.charging.thruster_is_on = zeros(mission.storage.num_storage_steps, 1);
     obj.store.charging.thruster_cmd = zeros(mission.storage.num_storage_steps, 1);
     obj.store.charging.reason_code = cell(mission.storage.num_storage_steps, 1);

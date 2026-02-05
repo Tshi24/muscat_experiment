@@ -25,7 +25,14 @@ function func_print_charging_mitigation_summary(mission, i_SC)
     
     % Extract data
     time_sec = charging.time_sec(1:kd);
-    phi_pred = charging.phi_pred(1:kd);
+    
+    % Use phi_used if available (actual spacecraft potential), otherwise fall back to phi_pred
+    if isfield(charging, 'phi_used')
+        phi_actual = charging.phi_used(1:kd);
+    else
+        phi_actual = charging.phi_pred(1:kd);
+    end
+    
     thruster_cmd = charging.thruster_cmd(1:kd);
     power_consumption = charging.power_consumption(1:kd);
     isSunlit = charging.isSunlit(1:kd);
@@ -43,12 +50,12 @@ function func_print_charging_mitigation_summary(mission, i_SC)
     %% Calculate Summary Statistics
     
     % Min and max potential
-    min_potential = min(phi_pred);
-    max_potential = max(phi_pred);
-    mean_potential = mean(phi_pred);
+    min_potential = min(phi_actual);
+    max_potential = max(phi_actual);
+    mean_potential = mean(phi_actual);
     
     % Find when potential was most negative
-    [~, idx_min] = min(phi_pred);
+    [~, idx_min] = min(phi_actual);
     time_min_potential = time_sec(idx_min);
     
     % Calculate thruster ON time
@@ -68,13 +75,13 @@ function func_print_charging_mitigation_summary(mission, i_SC)
     eclipse_idx = (isSunlit == 0);
     
     if any(sunlit_idx)
-        mean_potential_sunlit = mean(phi_pred(sunlit_idx));
+        mean_potential_sunlit = mean(phi_actual(sunlit_idx));
     else
         mean_potential_sunlit = NaN;
     end
     
     if any(eclipse_idx)
-        mean_potential_eclipse = mean(phi_pred(eclipse_idx));
+        mean_potential_eclipse = mean(phi_actual(eclipse_idx));
     else
         mean_potential_eclipse = NaN;
     end

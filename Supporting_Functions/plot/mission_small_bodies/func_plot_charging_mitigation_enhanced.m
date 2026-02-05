@@ -97,8 +97,17 @@ function func_plot_charging_mitigation_enhanced(mission, i_SC)
     subplot(3, 2, 2);
     hold on; grid on;
     
+    % Use phi_used if available (actual spacecraft potential), otherwise fall back to phi_pred
+    if isfield(charging, 'phi_used')
+        phi_actual = charging.phi_used(1:kd);
+        label_actual = 'S/C Potential (actual)';
+    else
+        phi_actual = charging.phi_pred(1:kd);
+        label_actual = 'S/C Potential';
+    end
+    
     % Plot actual potential
-    plot(time_hours, charging.phi_pred(1:kd), 'b-', 'LineWidth', 2.5, 'DisplayName', 'S/C Potential');
+    plot(time_hours, phi_actual, 'b-', 'LineWidth', 2.5, 'DisplayName', label_actual);
     
     % Plot predictions
     plot(time_hours, charging.phiOff_pred(1:kd), 'r--', 'LineWidth', 1, 'DisplayName', '\phi (Thruster OFF)');
@@ -110,9 +119,9 @@ function func_plot_charging_mitigation_enhanced(mission, i_SC)
     yline(0, 'k:', 'LineWidth', 1, 'HandleVisibility', 'off');
     
     % Highlight regions where potential is critical
-    critical_idx = find(charging.phi_pred(1:kd) <= V_ON_val);
+    critical_idx = find(phi_actual <= V_ON_val);
     if ~isempty(critical_idx)
-        scatter(time_hours(critical_idx), charging.phi_pred(critical_idx), 50, 'r', 'filled', ...
+        scatter(time_hours(critical_idx), phi_actual(critical_idx), 50, 'r', 'filled', ...
                 'DisplayName', 'Critical Charging');
     end
     
@@ -211,23 +220,30 @@ function func_plot_charging_mitigation_enhanced(mission, i_SC)
     subplot(3, 2, 6);
     axis off;
     
+    % Use phi_used if available (actual spacecraft potential), otherwise fall back to phi_pred
+    if isfield(charging, 'phi_used')
+        phi_actual = charging.phi_used(1:kd);
+    else
+        phi_actual = charging.phi_pred(1:kd);
+    end
+    
     % Calculate statistics
-    min_potential = min(charging.phi_pred(1:kd));
-    max_potential = max(charging.phi_pred(1:kd));
-    mean_potential = mean(charging.phi_pred(1:kd));
+    min_potential = min(phi_actual);
+    max_potential = max(phi_actual);
+    mean_potential = mean(phi_actual);
     
     % Sunlit vs Eclipse statistics
     sunlit_idx = charging.isSunlit(1:kd) == 1;
     eclipse_idx = charging.isSunlit(1:kd) == 0;
     
     if any(sunlit_idx)
-        mean_pot_sunlit = mean(charging.phi_pred(sunlit_idx));
+        mean_pot_sunlit = mean(phi_actual(sunlit_idx));
     else
         mean_pot_sunlit = NaN;
     end
     
     if any(eclipse_idx)
-        mean_pot_eclipse = mean(charging.phi_pred(eclipse_idx));
+        mean_pot_eclipse = mean(phi_actual(eclipse_idx));
     else
         mean_pot_eclipse = NaN;
     end

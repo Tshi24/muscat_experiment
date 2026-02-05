@@ -53,13 +53,13 @@ function func_plot_charging_mitigation(mission, i_SC)
     hold on;
     grid on;
     
-    % Plot predicted potential
-    plot(time_hours, charging.phi_pred(1:kd), 'b-', 'LineWidth', 2, 'DisplayName', 'Spacecraft Potential');
+    % Plot actual spacecraft potential (phi_used) - main curve
+    plot(time_hours, charging.phi_used(1:kd), 'b-', 'LineWidth', 2.5, 'DisplayName', 'Spacecraft Potential (actual)');
     
-    % Plot potential with thruster OFF (prediction)
+    % Plot potential with thruster OFF (prediction) - reference line
     plot(time_hours, charging.phiOff_pred(1:kd), 'r--', 'LineWidth', 1, 'DisplayName', '\phi_{OFF} (predicted)');
     
-    % Plot potential with thruster ON (prediction)
+    % Plot potential with thruster ON (prediction) - reference line
     plot(time_hours, charging.phiOn_pred(1:kd), 'g--', 'LineWidth', 1, 'DisplayName', '\phi_{ON} (predicted)');
     
     % Plot threshold lines
