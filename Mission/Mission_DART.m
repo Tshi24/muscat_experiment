@@ -216,10 +216,10 @@ switch mission.charging_scenario
         fprintf('\n*** SCENARIO: AU1_sunlight - 1 AU in sunlight ***\n');
         r_AU = 1.0 * 149597870.7; % 1 AU in km
         % Place at 1 AU from Sun
-        init_data.position = [r_AU; 0; 0];
+        init_data.position = [r_AU, 0, 0]; % Row vector (1x3)
         % Circular orbit velocity at 1 AU
         v_circ = sqrt(1.32712440018e11 / r_AU); % [km/s] GM_sun / r
-        init_data.velocity = [0; v_circ; 0];
+        init_data.velocity = [0, v_circ, 0]; % Row vector (1x3)
         
     case 'AU1_eclipse'
         % Force spacecraft to 1 AU but in Earth's shadow to trigger eclipse
@@ -227,17 +227,17 @@ switch mission.charging_scenario
         r_AU = 1.0 * 149597870.7; % 1 AU in km
         % Place near Earth's orbital distance but offset
         % Position slightly behind Earth to be in shadow
-        init_data.position = [r_AU * 0.999; 0; 0]; % Slightly closer to Sun
+        init_data.position = [r_AU * 0.999, 0, 0]; % Row vector (1x3) - Slightly closer to Sun
         v_circ = sqrt(1.32712440018e11 / (r_AU * 0.999)); % [km/s]
-        init_data.velocity = [0; v_circ * 0.98; 0]; % Slower to drift into eclipse
+        init_data.velocity = [0, v_circ * 0.98, 0]; % Row vector (1x3) - Slower to drift into eclipse
         
     case 'AU0044'
         % Force spacecraft to 0.044 AU (very close to Sun)
         fprintf('\n*** SCENARIO: AU0044 - Near Sun at 0.044 AU ***\n');
         r_AU = 0.044 * 149597870.7; % 0.044 AU in km
-        init_data.position = [r_AU; 0; 0];
+        init_data.position = [r_AU, 0, 0]; % Row vector (1x3)
         v_circ = sqrt(1.32712440018e11 / r_AU); % [km/s]
-        init_data.velocity = [0; v_circ; 0];
+        init_data.velocity = [0, v_circ, 0]; % Row vector (1x3)
         
     case 'BENNU'
         % Use default SPICE trajectory (already loaded above)
