@@ -36,26 +36,36 @@ function func_plot_charging_mitigation_enhanced(mission, i_SC)
     if isempty(V_OFF_val), V_OFF_val = -12; end
     
     % Get battery and power data
-    if isfield(mission.true_SC{i_SC}.true_SC_battery{1}, 'store')
+    % Note: battery_current is not stored in MuSCAT battery model - only state_of_charge
+    if isfield(mission.true_SC{i_SC}, 'true_SC_battery') && ...
+       mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_battery > 0 && ...
+       isfield(mission.true_SC{i_SC}.true_SC_battery{1}, 'store')
         battery_charge = mission.true_SC{i_SC}.true_SC_battery{1}.store.state_of_charge(1:kd);  % [%]
-        battery_current = mission.true_SC{i_SC}.true_SC_battery{1}.store.battery_current(1:kd);  % [A]
+        battery_available = true;
     else
         battery_charge = zeros(kd, 1);
-        battery_current = zeros(kd, 1);
+        battery_available = false;
     end
     
     % Get solar panel power
-    if isfield(mission.true_SC{i_SC}.true_SC_solar_panel{1}, 'store')
+    if isfield(mission.true_SC{i_SC}, 'true_SC_solar_panel') && ...
+       mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_solar_panel > 0 && ...
+       isfield(mission.true_SC{i_SC}.true_SC_solar_panel{1}, 'store')
         solar_power = mission.true_SC{i_SC}.true_SC_solar_panel{1}.store.instantaneous_power_generated(1:kd);  % [W]
+        solar_available = true;
     else
         solar_power = zeros(kd, 1);
+        solar_available = false;
     end
     
     % Get total power consumption
-    if isfield(mission.true_SC{i_SC}.true_SC_power, 'store')
+    if isfield(mission.true_SC{i_SC}, 'true_SC_power') && ...
+       isfield(mission.true_SC{i_SC}.true_SC_power, 'store')
         power_consumed = mission.true_SC{i_SC}.true_SC_power.store.instantaneous_power_consumed(1:kd);  % [W]
+        power_available = true;
     else
         power_consumed = zeros(kd, 1);
+        power_available = false;
     end
     
     % Standard font size
@@ -174,25 +184,40 @@ function func_plot_charging_mitigation_enhanced(mission, i_SC)
     subplot(3, 2, 4);
     hold on; grid on;
     
-    % Plot solar power generation
-    plot(time_hours, solar_power, 'g-', 'LineWidth', 2, 'DisplayName', 'Solar Power Generated');
-    
-    % Plot total power consumption
-    plot(time_hours, power_consumed, 'r-', 'LineWidth', 2, 'DisplayName', 'Total Power Consumed');
-    
-    % Plot EP thruster contribution
-    plot(time_hours, charging.power_consumption(1:kd), 'b--', 'LineWidth', 1.5, ...
-         'DisplayName', 'EP Thruster Power (Mitigation)');
-    
-    % Net power
-    net_power = solar_power - power_consumed;
-    plot(time_hours, net_power, 'k:', 'LineWidth', 1.5, 'DisplayName', 'Net Power (Gen - Cons)');
-    yline(0, 'k-', 'LineWidth', 0.5, 'HandleVisibility', 'off');
+    if power_available || solar_available
+        % Plot solar power generation if available
+        if solar_available
+            plot(time_hours, solar_power, 'g-', 'LineWidth', 2, 'DisplayName', 'Solar Power Generated');
+        end
+        
+        % Plot total power consumption if available
+        if power_available
+            plot(time_hours, power_consumed, 'r-', 'LineWidth', 2, 'DisplayName', 'Total Power Consumed');
+        end
+        
+        % Always plot EP thruster contribution (from charging telemetry)
+        plot(time_hours, charging.power_consumption(1:kd), 'b--', 'LineWidth', 1.5, ...
+             'DisplayName', 'EP Thruster Power (Mitigation)');
+        
+        % Net power if both solar and consumption are available
+        if solar_available && power_available
+            net_power = solar_power - power_consumed;
+            plot(time_hours, net_power, 'k:', 'LineWidth', 1.5, 'DisplayName', 'Net Power (Gen - Cons)');
+        end
+        
+        yline(0, 'k-', 'LineWidth', 0.5, 'HandleVisibility', 'off');
+        legend('Location', 'best', 'FontSize', font_size-3);
+    else
+        % No power data available
+        text(0.5, 0.5, 'Power system data not available', ...
+             'HorizontalAlignment', 'center', ...
+             'FontSize', font_size, ...
+             'Color', [0.5, 0.5, 0.5]);
+    end
     
     xlabel('Time [hours]', 'FontSize', font_size);
     ylabel('Power [W]', 'FontSize', font_size);
     title('Power Budget', 'FontSize', font_size, 'FontWeight', 'bold');
-    legend('Location', 'best', 'FontSize', font_size-3);
     set(gca, 'FontSize', font_size);
     hold off;
     
@@ -200,19 +225,23 @@ function func_plot_charging_mitigation_enhanced(mission, i_SC)
     subplot(3, 2, 5);
     hold on; grid on;
     
-    yyaxis left
-    plot(time_hours, battery_charge, 'b-', 'LineWidth', 2);
-    ylabel('State of Charge [%]', 'FontSize', font_size);
-    ylim([0, 100]);
-    
-    yyaxis right
-    plot(time_hours, battery_current, 'r-', 'LineWidth', 1.5);
-    ylabel('Battery Current [A]', 'FontSize', font_size);
-    yline(0, 'k:', 'LineWidth', 0.5);
+    if battery_available
+        plot(time_hours, battery_charge, 'b-', 'LineWidth', 2.5, 'DisplayName', 'State of Charge');
+        ylabel('State of Charge [%]', 'FontSize', font_size);
+        ylim([max(0, min(battery_charge)-5), min(100, max(battery_charge)+5)]);
+    else
+        % No battery data available
+        text(0.5, 0.5, 'Battery data not available', ...
+             'HorizontalAlignment', 'center', ...
+             'FontSize', font_size, ...
+             'Color', [0.5, 0.5, 0.5]);
+    end
     
     xlabel('Time [hours]', 'FontSize', font_size);
     title('Battery Performance', 'FontSize', font_size, 'FontWeight', 'bold');
-    legend({'State of Charge', 'Current (+ = Charging)'}, 'Location', 'best', 'FontSize', font_size-2);
+    if battery_available
+        legend('Location', 'best', 'FontSize', font_size-2);
+    end
     set(gca, 'FontSize', font_size);
     hold off;
     
