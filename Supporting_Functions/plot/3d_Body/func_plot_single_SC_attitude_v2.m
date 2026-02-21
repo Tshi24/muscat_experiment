@@ -261,7 +261,7 @@ end
 
 % EP Thruster visualization with attitude transformation
 for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster
-    equipment = mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW};
+    equipment = mission.true_SC{i_SC}.true_SC_EP_thruster{i_HW};
 
     % Equipment location and orientation
     HW_location = equipment.location;

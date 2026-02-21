@@ -205,7 +205,7 @@ function func_plot_orbital_control_performance(mission, i_SC)
         hold on;
 
         for i_HW = 1:num_thrusters
-            thruster = mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW};
+            thruster = mission.true_SC{i_SC}.true_SC_EP_thruster{i_HW};
         
             plot(mission.true_time.store.time(1:kd), thruster.store.commanded_thrust(1:kd), strcat('-', colors{i_HW}), 'LineWidth', 1.5, 'DisplayName', strcat('Commanded #', num2str(i_HW)));
             plot(mission.true_time.store.time(1:kd), thruster.store.true_commanded_thrust(1:kd), strcat('--', colors{i_HW}), 'LineWidth', 1.5, 'DisplayName', strcat('True #', num2str(i_HW)));
@@ -228,7 +228,7 @@ function func_plot_orbital_control_performance(mission, i_SC)
 
                 force_data = zeros(size(thruster.store.force_inertial(1:kd, :)));
                 for i_HW = 1:num_thrusters
-                    thruster = mission.true_SC{i_SC}.true_SC_ep_thruster{i_HW};
+                    thruster = mission.true_SC{i_SC}.true_SC_EP_thruster{i_HW};
                     force_data = force_data + thruster.store.force_inertial(1:kd, :);
                 end
 

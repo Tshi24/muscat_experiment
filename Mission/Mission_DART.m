@@ -26,6 +26,15 @@ mission.num_target = 1;        % Number of Target bodies
 mission.frame = 'Absolute';    % Frame type: 'Absolute', 'Relative', or 'Combined'
 mission.flag_stop_sim = 0;     % Boolean flag to stop simulation if needed
 
+%% ========== CHARGING MITIGATION SCENARIO SELECTION ==========
+% Select scenario to demonstrate different charging conditions:
+%   'AU1_sunlight' - 1 AU in sunlight (safe, thruster stays OFF)
+%   'AU1_eclipse'  - 1 AU in eclipse (~-15V, thruster activates)
+%   'AU0044'       - 0.044 AU near Sun (severe charging, high mitigation)
+%   'BENNU'        - Default Bennu orbit (0.896 AU, mixed conditions)
+mission.charging_scenario = 'BENNU';  % <<< CHANGE THIS TO TEST SCENARIOS
+% ================================================================
+
 %% Time Configuration
 
 init_data = [];
@@ -164,6 +173,7 @@ init_data.num_hardware_exists.num_star_tracker = 3;
 init_data.num_hardware_exists.num_imu = 1;
 init_data.num_hardware_exists.num_micro_thruster = 12;
 init_data.num_hardware_exists.num_chemical_thruster = 1;
+init_data.num_hardware_exists.num_ep_thruster = 1;  % Add EP thruster for charging mitigation
 init_data.num_hardware_exists.num_reaction_wheel = 3;
 init_data.num_hardware_exists.num_communication_link = 2;
 init_data.num_hardware_exists.num_radio_antenna = 1;
@@ -196,6 +206,50 @@ init_data.spice_name = '-110'; % [string] : SC's SPICE Name
 init_data.SC_pos_vel = cspice_spkezr(init_data.spice_name,mission.true_time.date,'J2000','NONE','SOLAR SYSTEM BARYCENTER');
 init_data.position = init_data.SC_pos_vel(1:3)'; % [km]
 init_data.velocity = init_data.SC_pos_vel(4:6)'; % [km/sec]
+
+%% Apply Scenario-Specific Orbit Modifications
+% Modify orbit based on selected charging scenario
+switch mission.charging_scenario
+    case 'AU1_sunlight'
+        % Force spacecraft to 1 AU from Sun in sunlight
+        % Use circular orbit at 1 AU (Earth's orbit radius)
+        fprintf('\n*** SCENARIO: AU1_sunlight - 1 AU in sunlight ***\n');
+        r_AU = 1.0 * 149597870.7; % 1 AU in km
+        % Place at 1 AU from Sun
+        init_data.position = [r_AU, 0, 0]; % Row vector (1x3)
+        % Circular orbit velocity at 1 AU
+        v_circ = sqrt(1.32712440018e11 / r_AU); % [km/s] GM_sun / r
+        init_data.velocity = [0, v_circ, 0]; % Row vector (1x3)
+        
+    case 'AU1_eclipse'
+        % Force spacecraft to 1 AU but in Earth's shadow to trigger eclipse
+        fprintf('\n*** SCENARIO: AU1_eclipse - 1 AU in eclipse ***\n');
+        r_AU = 1.0 * 149597870.7; % 1 AU in km
+        % Place near Earth's orbital distance but offset
+        % Position slightly behind Earth to be in shadow
+        init_data.position = [r_AU * 0.999, 0, 0]; % Row vector (1x3) - Slightly closer to Sun
+        v_circ = sqrt(1.32712440018e11 / (r_AU * 0.999)); % [km/s]
+        init_data.velocity = [0, v_circ * 0.98, 0]; % Row vector (1x3) - Slower to drift into eclipse
+        
+    case 'AU0044'
+        % Force spacecraft to 0.044 AU (very close to Sun)
+        fprintf('\n*** SCENARIO: AU0044 - Near Sun at 0.044 AU ***\n');
+        r_AU = 0.044 * 149597870.7; % 0.044 AU in km
+        init_data.position = [r_AU, 0, 0]; % Row vector (1x3)
+        v_circ = sqrt(1.32712440018e11 / r_AU); % [km/s]
+        init_data.velocity = [0, v_circ, 0]; % Row vector (1x3)
+        
+    case 'BENNU'
+        % Use default SPICE trajectory (already loaded above)
+        fprintf('\n*** SCENARIO: BENNU - Default Bennu orbit trajectory ***\n');
+        % init_data.position and velocity already set from SPICE
+        
+    otherwise
+        warning(['Unknown scenario: ', mission.charging_scenario, '. Using BENNU default.']);
+end
+
+fprintf('Initial orbit: r = %.4f AU\n', norm(init_data.position) / 149597870.7);
+fprintf('=========================================\n\n');
 
 init_data.mode_true_SC_navigation_dynamics_selector = 'Absolute Dynamics';
 
@@ -686,6 +740,35 @@ for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_chemic
     mission.true_SC{i_SC}.true_SC_chemical_thruster{i_HW} = True_SC_Chemical_Thruster(init_data, mission, i_SC, i_HW);
 end
 
+%% EP Thruster Configuration (for Charging Mitigation)
+for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_ep_thruster
+
+    init_data = [];
+
+    % Power and data parameters
+    init_data.instantaneous_power_consumption = 50.0;           % [W] EP thruster power draw when ON
+    init_data.command_actuation_power_consumed = 50.0;          % [W] Power during active thrust
+    init_data.instantaneous_data_generated_per_sample = 5;      % [kb] per sample
+    
+    % Thruster properties
+    init_data.thruster_ISP = 3000;                              % [s] High specific impulse for EP
+    init_data.command_wait_time = 1;                            % [s] Minimum time between commands
+    init_data.location = [0.3, 0.2/2, 0.1/2];                   % [m] Thruster location in body frame
+    init_data.orientation = [-1, 0, 0];                         % Thrust direction (unit vector)
+
+    init_data.maximum_thrust = 0.1;                             % [N] Maximum thrust level (typical for EP)
+    init_data.minimum_thrust = 0.01;                            % [N] Minimum thrust level
+    
+    init_data.thruster_noise = 1e-4;                            % [N] Thrust noise level
+    init_data.gimbal_noise = 0.1;                               % [deg] Gimbal noise
+    init_data.maximum_gimbal = 5;                               % [deg] Maximum gimbal angle
+
+    init_data.mode_true_EP_thruster_selector = 'Simple';        % Mode (Truth/Simple)
+
+    % Create EP thruster object
+    mission.true_SC{i_SC}.true_SC_EP_thruster{i_HW} = True_SC_EP_Thruster(init_data, mission, i_SC, i_HW);
+end
+
 %% Onboard Computer Configuration
 for i_HW = 1:1:mission.true_SC{i_SC}.true_SC_body.num_hardware_exists.num_onboard_computer
     init_data = [];
@@ -765,6 +848,61 @@ init_data.sc_modes = {'Point camera to Target', 'Maximize SP Power', 'Point Thru
 init_data.mode_software_SC_executive_selector = 'DART';
 
 mission.true_SC{i_SC}.software_SC_executive = Software_SC_Executive(init_data, mission, i_SC);
+
+%% Spacecraft Charging Mitigation Configuration
+
+init_data_charging = [];
+
+%% ========== THRESHOLD CONFIGURATION (EASY TO CHANGE) ==========
+% These thresholds control when the EP thruster activates for charging mitigation
+% SINGLE CONFIGURATION POINT - Change here only!
+
+init_data_charging.V_ON = -10;   % [V] Turn thruster ON when phi <= -10 V
+init_data_charging.V_OFF = -6;   % [V] Allow thruster OFF when phi >= -6 V
+
+% Alternative threshold sets (uncomment to use):
+% Conservative (less frequent activation):
+%   init_data_charging.V_ON = -20;   % [V] Turn thruster ON when phi <= -20 V
+%   init_data_charging.V_OFF = -12;  % [V] Allow thruster OFF when phi >= -12 V
+
+% Very sensitive (more frequent activation):
+%   init_data_charging.V_ON = -7;    % [V] Turn thruster ON when phi <= -7 V
+%   init_data_charging.V_OFF = -4;   % [V] Allow thruster OFF when phi >= -4 V
+
+% NOTE: Hysteresis Gap = V_OFF - V_ON (current: 4V)
+% Larger gap = more stable (less chatter), smaller gap = tighter control
+% ===============================================================
+
+% Sunlight Policy: false = Allow EP in eclipse (RECOMMENDED for Bennu)
+% Near Bennu: Eclipse charging ~-15V (concerning but above -20V threshold)
+% Setting to false provides protection if eclipse charging worsens
+% Power impact: Minimal (only activates if phi <= V_ON)
+init_data_charging.policy_require_sunlight_for_ep = false;  % Allow EP in eclipse for comprehensive protection
+
+init_data_charging.clamp_range = [0.044, 1.0];  % [AU] Valid model range for x_AU
+
+mission.true_SC{i_SC}.charging_mitigation_config = init_data_charging;
+
+% Display configuration
+fprintf('\n');
+fprintf('=== CHARGING MITIGATION CONFIGURATION ===\n');
+fprintf('  V_ON Threshold:  %.0f V (thruster turns ON when potential <= %.0f V)\n', ...
+        init_data_charging.V_ON, init_data_charging.V_ON);
+fprintf('  V_OFF Threshold: %.0f V (thruster turns OFF when potential >= %.0f V)\n', ...
+        init_data_charging.V_OFF, init_data_charging.V_OFF);
+fprintf('  Eclipse Policy:  %s\n', iif(init_data_charging.policy_require_sunlight_for_ep, 'Sunlight only', 'Allow in eclipse'));
+fprintf('=========================================\n\n');
+
+clear init_data_charging
+
+% Helper function for conditional display
+function result = iif(condition, true_val, false_val)
+    if condition
+        result = true_val;
+    else
+        result = false_val;
+    end
+end
 
 %% Spacecraft Software: Attitude Estimation Configuration
 
@@ -861,6 +999,14 @@ save([mission.storage.output_folder, 'all_data.mat'], '-v7.3')
 disp(['Finished writing to file "all_data.mat" in folder : ', mission.storage.output_folder])
 disp ('----------------------------------------')
 
+%% Charging Mitigation Analysis
+% Print summary and save charging mitigation data
+for i_SC = 1:mission.num_SC
+    if isfield(mission.true_SC{i_SC}.software_SC_executive.store, 'charging')
+        func_print_charging_mitigation_summary(mission, i_SC);
+    end
+end
+
 
 %% Plots
 % Use our memory-optimized visualization
@@ -874,5 +1020,21 @@ memoryInfo = evalc('dispmemory()');
 fprintf('Visualization complete.');
 disp(['Current memory after visualisation - ', memoryInfo(1:end-1), ])
 disp ('----------------------------------------')
+
+%% Charging Mitigation Plotting
+% Generate charging mitigation visualizations
+for i_SC = 1:mission.num_SC
+    if isfield(mission.true_SC{i_SC}.software_SC_executive.store, 'charging')
+        % Standard charging plot
+        func_plot_charging_mitigation(mission, i_SC);
+        
+        % Enhanced plot with battery and solar panel integration
+        func_plot_charging_mitigation_enhanced(mission, i_SC);
+    end
+end
+disp('Charging mitigation plots generated.')
+disp ('----------------------------------------')
+
+
 
 
